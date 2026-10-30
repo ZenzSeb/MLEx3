@@ -1,0 +1,231 @@
+\documentclass[hidelinks,10pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{bm}
+\pagestyle{fancy}
+\newcommand\norm[1]{\left\lVert#1\right\rVert}
+\usepackage[utf8]{inputenc}
+\usepackage{mathtools}
+\usepackage{parskip}
+\usepackage{dsfont}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{booktabs}
+
+\input{../Template/mycommands.tex}
+
+\providecommand{\xx}{\mathbf{x}}
+\providecommand{\yy}{\mathbf{y}}
+\providecommand{\XX}{\mathbf{X}}
+\providecommand{\tth}{\bm{\theta}}
+\providecommand{\rank}{\operatorname{rank}}
+\providecommand{\zz}{\mathbf{z}}
+\providecommand{\ZZ}{\mathbf{Z}}
+\providecommand{\bb}{\mathbf{b}}
+\providecommand{\BB}{\mathbf{B}}
+\providecommand{\CC}{\mathbf{C}}
+
+\newcommand{\R}{\mathbb{R}}
+
+\lstset{ %
+    basicstyle=\footnotesize, % the size of the fonts that are used for the code
+}
+
+\hypersetup{colorlinks=false}
+
+% long \texttt{} identifiers cannot be hyphenated -- allow extra stretch instead of overfull lines
+\setlength{\emergencystretch}{3em}
+
+\rhead{\thepage}
+\cfoot{}
+\lfoot{ML for AIE, WS2026/27, Exercise Sheet 03}
+
+\begin{document}
+\title{Machine Learning for Artificial Intelligence Engineering,\\
+Winter Term 2026/27, Exercise Sheet 03\\
+PCA and Model Selection: Predicting House Prices.}
+\author{
+    Alexander Mayr \\ \href{mailto:alexander.mayr@tugraz.at}{alexander.mayr@tugraz.at}
+}
+\date{}
+
+\maketitle
+\begin{tabular}{rl}
+    Points to achieve: & 15 Points\\
+    Deadline: & 19.11.2026 23:59 (strict, no late submissions allowed)\\
+    Review Session: & 20.11.2026, in person (see General remarks)\\
+    Hand-in procedure: & Work in pairs (your TeachCenter group). \textbf{Exactly one} team member\\
+    & submits \textbf{all Python files and a report (PDF)} to the TeachCenter.\\
+    & Do not rename the Python files. Do not zip them.\\
+    & Do not upload the \texttt{plots} folder or the data set.\\
+    Generative AI: & Allowed -- but you must be able to explain every part of your solution\\
+    & without it (see General remarks).\\
+    Plagiarism: & If detected, 0 points on the entire exercise sheet for all parties involved.\\
+    & If this happens twice, we will grade the group with\\
+    & ``Ungültig aufgrund von Täuschung''\\
+    Course info: & TeachCenter\\
+\end{tabular}
+
+\vspace*{0.5cm}
+
+\tableofcontents
+
+\pagebreak
+
+\begingroup
+% compact lists so that the general remarks fit on one page
+\setlist[itemize]{itemsep=0.15em, parsep=0pt, topsep=0.3em}
+\section*{General remarks}
+
+Your submission will be graded based on:
+\begin{itemize}
+    \item Correctness (Is your code doing what it should be doing?)
+    \item Your derivations (Show the intermediate steps. Typeset and legible handwritten scans are both fine.)
+    \item The depth of your interpretations (Usually, only a couple of lines are needed.)
+    \item The quality of your plots (Is everything clearly readable/interpretable? Are axes labeled? \dots)
+    \item Your report starts with the \textbf{cover letter} (names and matriculation numbers of both team members, see the introductory practical).
+    \item Your submission must run with Python 3.11 (or newer) and the package versions listed in \texttt{requirements.txt} (e.g., run \texttt{pip install -r requirements.txt} in a fresh Python environment).
+\end{itemize}
+
+Since we run automated tests, it is crucial that you keep the following in mind:
+\begin{itemize}
+    \item \textbf{Do not add any additional \texttt{import} statements} anywhere in the code.
+    \item \textbf{Do not modify the function signatures} of the skeleton functions (i.e., their names and inputs).
+    \item \textbf{Do not change the random seed} and the other constants at the top of \texttt{main.py} and the \texttt{task}\#\texttt{.py} files.
+\end{itemize}
+
+\subsection*{Code Skeleton}
+The code skeleton consists of \texttt{main.py}, \texttt{task1.py}, \texttt{task2.py}, \texttt{task3.py}, \texttt{plotting.py}, \texttt{data\_utils.py}, \texttt{ames\_housing.csv} and \texttt{requirements.txt}. Every section of this sheet has its own file \texttt{task}\#\texttt{.py}, which \texttt{main.py} loads. Fill in all \texttt{TODO}s in \texttt{task1.py}, \texttt{task2.py} and \texttt{task3.py}; the other files do not need to be edited. Run \texttt{python main.py} to run all tasks, or, e.g., \texttt{python main.py 3} to run a single task (Tasks~2 and~3 need your \texttt{standardize\_and\_fit\_pca} from \texttt{task1.py}, Task~3 also your functions from \texttt{task2.py}). All plots are saved to the folder \texttt{plots}.
+
+\subsection*{Use of Generative AI}
+The use of generative AI (coding assistants, LLMs) is \textbf{explicitly allowed} for this and every other exercise sheet. However, if your group is drawn in the review session, you must be able to \textbf{explain and defend every part of your solution} -- code, derivations and interpretations -- \textbf{without AI assistance}. All tasks on this sheet can be solved with the slides of the lectures \emph{Dimensionality Reduction} and \emph{Model Evaluation and Selection} alone.
+
+At the end of your report, \textbf{include a short paragraph that details your usage of generative AI}: (1) which tool(s) you used, (2) how it helped (e.g., debugging code, explaining a derivation), and (3) its limitations (e.g., generated code or derivations that were wrong and had to be fixed).
+
+\subsection*{Review Session}
+In the review session on 20.11.2026, 3--6 groups are drawn at random from the pool of available groups to present and discuss their solutions. Your group is in the pool unless you state in your submission that you are \textbf{not available} (``Not present''), together with a reason. To receive points for all exercise sheets, your group must be available at least twice over the semester. If a group that is available is drawn and does not present, the sheet is graded with 0 points.
+
+\endgroup
+
+\pagebreak
+
+%=====================================================================================================
+\section*{scikit-learn}
+\begin{itemize}
+    \item This sheet uses \texttt{NumPy}, \texttt{pandas}, \texttt{scikit-learn} and \texttt{Matplotlib}.
+    \item The focus of this sheet is the \textbf{interpretation of your results}, not the implementation. You may (and should) use the methods of \texttt{scikit-learn}, e.g., \texttt{StandardScaler}, \texttt{PCA}, \texttt{LinearRegression} or \texttt{KFold}. The implementation consists of calling the \textbf{correct methods on the correct data set} (training, validation or test set). The \texttt{TODO}s in the code files contain hints on the methods to use; most \texttt{TODO}s need only one or two lines.
+    \item Read the documentation of the methods you use. Note that \texttt{PCA.explained\_variance\_} uses the factor $\frac{1}{N-1}$ instead of the $\frac{1}{N}$ of the lecture; for $N = 2413$, the difference is negligible.
+    \item \texttt{scikit-learn} expects the inputs as a matrix of shape $(N, D)$, even for a single feature: the score $z_1$ therefore has shape $(N, 1)$, the targets $\yy$ have shape $(N,)$.
+\end{itemize}
+
+
+\section{Principal Component Analysis [5 points]}
+
+Principal component analysis (PCA) is an \emph{unsupervised} method: it only uses the inputs $\xx^{(1)}, \dots, \xx^{(N)} \in \R^D$, never the targets. With the examples as rows of $\XX \in \R^{N \times D}$, PCA proceeds as follows:
+\begin{enumerate}[label=\arabic*., itemsep=0.1em, topsep=0.2em]
+    \item Center the data: $\bar{\xx} = \frac{1}{N}\sum_{i=1}^{N}\xx^{(i)}$ and $\xx^{(i)} \leftarrow \xx^{(i)} - \bar{\xx}$ for all $i$.
+    \item Compute the covariance matrix $\CC = \frac{1}{N}\sum_{i=1}^{N}\xx^{(i)}\xx^{(i)T} = \frac{1}{N}\XX^T\XX \in \R^{D \times D}$.
+    \item Compute the eigendecomposition $\CC\,\bb_j = \lambda_j\bb_j$ with $\lambda_1 \geq \lambda_2 \geq \dots \geq \lambda_D \geq 0$ and $\norm{\bb_j}_2 = 1$.
+\end{enumerate}
+The \emph{principal directions} $\bb_j$ are the columns of $\BB$, and $\BB_K = (\bb_1, \dots, \bb_K)$ contains the first $K$ of them. The \emph{principal component scores} and the \emph{reconstructions} are
+\begin{equation}
+    \ZZ = \XX\BB_K \in \R^{N \times K}, \qquad \hat{\XX} = \ZZ\BB_K^T \in \R^{N \times D}
+    \label{eq:pca}
+\end{equation}
+(for data that was not centered, $\bar{\xx}$ is subtracted before the projection and added again to the reconstructions). The variance of the $j$-th score is $\lambda_j$, and $\lambda_j / \sum_{i=1}^{D}\lambda_i$ is the \emph{explained variance ratio} of the $j$-th principal direction.
+
+We use the \emph{Ames Housing} data set of Sheet~02 (D.~De Cock, Journal of Statistics Education, 2011): $N = 2413$ house sales in Ames, Iowa (USA), from 2006 to 2010. Every row of \texttt{ames\_housing.csv} is one house:
+
+\begin{center}
+\footnotesize
+\begin{tabular}{ll@{\hspace{1.5em}}ll}
+    \toprule
+    \texttt{living\_area} & living area above ground (m$^2$) & \texttt{overall\_quality} & material/finish, 1 (very poor) -- 10 (excellent)\\
+    \texttt{lot\_area} & area of the plot (m$^2$) & \texttt{bedrooms} & number of bedrooms\\
+    \texttt{basement\_area} & area of the basement (m$^2$) & \texttt{bathrooms} & number of full bathrooms\\
+    \texttt{garage\_area} & area of the garage (m$^2$) & \texttt{fireplaces} & number of fireplaces\\
+    \texttt{year\_built} & year of construction & \texttt{price} & sale price (target), in k\$ (1000 US dollars)\\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Tasks:}
+\begin{enumerate}
+    \item \textbf{[2 points]} \emph{(Pen and paper.)} Consider $N = 4$ centered examples with $D = 2$:
+    \begin{equation}
+        \xx^{(1)} = (2, 1)^T, \quad \xx^{(2)} = (-2, -1)^T, \quad \xx^{(3)} = (1, 2)^T, \quad \xx^{(4)} = (-1, -2)^T.
+    \end{equation}
+
+    \begin{enumerate}[label=(\alph*), itemsep=0.1em, topsep=0.2em]
+        \item Compute $\CC$, its eigenvalues (via the characteristic polynomial) and the unit-length principal directions $\bb_1$, $\bb_2$. What is the explained variance ratio of $\bb_1$?
+        \item Use $K = 1$: compute the scores $z^{(i)} = \bb_1^T\xx^{(i)}$, the reconstructions $\hat{\xx}^{(i)} = \bb_1 z^{(i)}$ and the mean squared reconstruction error $\frac{1}{N}\sum_{i=1}^{N}\norm{\xx^{(i)} - \hat{\xx}^{(i)}}_2^2$. Compare it with $\lambda_2$.
+    \end{enumerate}
+
+    \item \textbf{[3 points]} Implement the \texttt{TODO}s in \texttt{task1.py}: in \texttt{standardize\_and\_fit\_pca}, standardize the nine features (mean $0$, variance $1$) and fit a PCA to them; in \texttt{load\_scores}, compute the scores $z_1$ for Tasks~2 and~3; in \texttt{task\_1}, read the explained variance ratio from the fitted PCA and compute the reconstructions and their errors. Report your results and answer the following:
+    \begin{itemize}
+        \item[\textbf{Q1.1}] \emph{(Why standardize?)} \texttt{task\_1} prints the variances of the raw features. Could a feature dominate $\bb_1$ in the non-standardized data? 
+        \item[\textbf{Q1.2}] Compare the printed reconstruction errors with the eigenvalues. Which relation from Task~1.1(b) do you find? How would you choose $K$ to \emph{compress} the data?
+        \item[\textbf{Q1.3}] \emph{(Interpretation.)} \texttt{task\_1} prints $\bb_1$. Which features contribute to it, and what does the score $z_1$ measure?
+        \item[\textbf{Q1.4}] PCA never sees the price, yet $z_1$ orders the houses by price in the scatter plot. Why? 
+    \end{itemize}
+\end{enumerate}
+
+%=====================================================================================================
+\section{Overfitting and Model Evaluation [5 points]}
+
+We now use PCA for \emph{feature extraction}: the score $z_1 = \bb_1^T\xx$ on the first principal direction summarizes the nine features of a house in a single number. We predict the price $y$ with a polynomial of degree $d$ in $z_1$, i.e., linear regression with the polynomial features of Sheet~02, Task~2.3:
+\begin{equation}
+    f_{\tth}(z_1) = \theta_0 + \theta_1 z_1 + \theta_2 z_1^2 + \dots + \theta_d z_1^d.
+    \label{eq:poly}
+\end{equation}
+The degree $d$ is a \emph{hyper-parameter}. We assume that we know the price of only $N_{\mathrm{train}} = 100$ houses (the training set); the remaining $2313$ houses form the test set. Since the test set is large, its MSE is a good estimate of the true loss. (Since PCA does not use the prices, your \texttt{load\_scores} from Task~1.2 computes $\bb_1$ once on the features of all houses.)
+
+\textbf{Tasks:}
+\begin{enumerate}
+    \item \textbf{[2 points]} \emph{(Toy example.)} Consider again the toy data of Sheet~02, Task~1 (number of rooms $x$, price $y$ in 100\,k\$): $(1, 1), (2, 2), (3, 2), (4, 3)$, and a fifth (test) house with $x = 5$ rooms sold for $y = 3.4$. On Sheet~02, you found the line $f(x) = 0.5 + 0.6\,x$; a colleague instead fits a polynomial of degree $d = 3$. Implement \texttt{polynomial\_model} (linear regression with polynomial features) and \texttt{train\_and\_evaluate} (trains a polynomial of degree $d$ on one data set and returns its MSE on another one) in \texttt{task2.py}. \texttt{task\_2} trains both models on the four houses. Report the printed parameters $\tth$, the training MSE and the squared error on the test house of both models. Answer the following questions with regard to your results:
+    \begin{itemize}
+        \item[\textbf{Q2.1}] Why can a polynomial of degree $3$ always reach a training MSE of $0$ on four houses with different $x$? \emph{Hint: shape and rank of the printed design matrix $\bm{\Phi}$.}
+        \item[\textbf{Q2.2}] Which model would you choose based on the training loss, and which based on the test loss? How is this phenomenon called?
+    \end{itemize}
+
+    \item \textbf{[3 points]} Complete the two \texttt{TODO}s in \texttt{task\_2} with your \texttt{train\_and\_evaluate}:
+    \begin{enumerate}[label=(\alph*), itemsep=0.1em, topsep=0.2em]
+        \item Report the training and the test MSE for $d = 1, \dots, 6$.
+        \item \emph{(Holdout method.)} \texttt{task\_2} splits the $100$ training houses into $70$ houses for training and $N_{\mathrm{val}} = 30$ houses for validation. Report the validation MSE for $d = 1, \dots, 6$. \texttt{task\_2} selects the degree with the smallest validation MSE, re-trains it on all $100$ training houses and evaluates it on the test set. Report the selected degree and its test MSE.
+    \end{enumerate}
+    Include the two provided plots. Answer the following questions with regard to your results:
+    \begin{itemize}
+        \item[\textbf{Q2.3}] Why can the training MSE not increase with $d$? Describe the test MSE: for which degrees does the model underfit, for which does it overfit? Use the plot of the fitted polynomials to explain where the large test errors come from.
+        \item[\textbf{Q2.4}] Why must the degree not be selected with the test MSE, even though it is available in \texttt{task\_2}? Which number could you then no longer report to a customer?
+        \item[\textbf{Q2.5}] The validation set contains only $30$ houses. How reliable is the selected degree? What would happen with a different random split?
+    \end{itemize}
+\end{enumerate}
+
+%=====================================================================================================
+\section{Model Selection with Cross-Validation [5 points]}
+
+With few labeled examples, the holdout method wastes data and its validation MSE is noisy. \emph{$K$-fold cross-validation} (CV) splits the training data randomly into $K$ folds of (almost) equal size (here, $K$ is the number of folds). For every hyper-parameter $d$ and every fold $k = 1, \dots, K$, the model is trained on all folds except the $k$-th one and evaluated on the $k$-th fold, which gives the validation loss $\mathcal{L}_{\mathrm{val},k}(d)$. The CV error is their mean:
+\begin{equation}
+    \mathcal{L}_{\mathrm{val}}(d) = \frac{1}{K}\sum_{k=1}^{K}\mathcal{L}_{\mathrm{val},k}(d), \qquad d^* = \operatorname*{arg\,min}_d \mathcal{L}_{\mathrm{val}}(d).
+    \label{eq:cv}
+\end{equation}
+Finally, the model with $d^*$ is re-trained on all training data and evaluated \emph{once} on the test set.
+
+\textbf{Tasks:}
+\begin{enumerate}
+    \item \textbf{[5 points]} Implement the three \texttt{TODO}s in \texttt{task\_3} in \texttt{task3.py}: split the same $100$ training houses as in Task~2 into $5$ folds, compute the validation MSE $\mathcal{L}_{\mathrm{val},k}(d)$ of every fold $k$ for $d = 1, \dots, 6$ and select $d^*$ with Equation~\eqref{eq:cv}. Report the printed table of the validation MSEs per fold and their mean $\mathcal{L}_{\mathrm{val}}(d)$. \texttt{task\_3} re-trains $d^*$ on all training houses and evaluates it on the test set. Report $d^*$ and its test MSE. Include the provided plot. Answer the following questions with regard to your results:
+    \begin{itemize}
+        \item[\textbf{Q3.1}] Which degree would the holdout method select if fold~1 were the validation set? And if one of the other folds were the validation set? Compare with the degree $d^*$ selected by CV.
+        \item[\textbf{Q3.2}] Do the holdout method of Task~2.2(b) and CV select the same degree? Which of the two selections do you trust more, and why?
+        \item[\textbf{Q3.3}] Why do we use the \emph{same} folds for every degree $d$?
+        \item[\textbf{Q3.4}] When would you prefer the holdout method over $K$-fold CV (think about the size of the data set and the cost of training)?
+    \end{itemize}
+\end{enumerate}
+
+\end{document}
