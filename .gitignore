@@ -1,1 +1,3 @@
 *.zip
+/solved_Ex3
+/__pycache__

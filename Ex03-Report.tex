@@ -1,0 +1,229 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.85in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{parskip}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{ML for AIE -- Exercise Sheet 03}
+\rhead{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlist[enumerate]{itemsep=0.2em,topsep=0.2em}
+\setlist[itemize]{itemsep=0.15em,topsep=0.2em}
+
+\newcommand{\plotplaceholder}[1]{%
+  \begin{center}
+    \fbox{\parbox[c][1.45in][c]{0.88\linewidth}{\centering
+      \textbf{Plot placeholder}\\[0.4em]
+      #1\\[0.4em]
+      \emph{Replace this box with the corresponding generated plot.}}}
+  \end{center}
+}
+
+\title{Exercise Sheet 03\\PCA and Model Selection: Predicting House Prices}
+\author{}
+\date{Winter Term 2026/27}
+
+\begin{document}
+\maketitle
+\textbf{Team members:} \emph{[Name and matriculation number]} \qquad
+\emph{[Name and matriculation number]}
+
+\section{Principal Component Analysis}
+
+\subsection{Task 1.1: Pen-and-paper calculation}
+
+The four examples occur in opposite pairs, so their mean is zero. Their covariance matrix, using the assignment's $1/N$ convention, is
+\[
+\mathbf C=\frac14\sum_{i=1}^4\mathbf x^{(i)}\mathbf x^{(i)T}
+=\begin{pmatrix}2.5&2\\2&2.5\end{pmatrix}.
+\]
+The characteristic equation is
+\[
+\det(\mathbf C-\lambda\mathbf I)=(2.5-\lambda)^2-4
+=\lambda^2-5\lambda+2.25=0,
+\]
+which gives $\lambda_1=4.5$ and $\lambda_2=0.5$. Corresponding unit directions are
+\[
+\mathbf b_1=\frac{1}{\sqrt2}(1,1)^T,\qquad
+\mathbf b_2=\frac{1}{\sqrt2}(1,-1)^T.
+\]
+The explained-variance ratio of $\mathbf b_1$ is $4.5/(4.5+0.5)=0.9$.
+
+For $K=1$, the scores for the four examples are
+$(3/\sqrt2,-3/\sqrt2,3/\sqrt2,-3/\sqrt2)$. Their reconstructions are respectively
+$(1.5,1.5),(-1.5,-1.5),(1.5,1.5),(-1.5,-1.5)$.
+Each squared Euclidean reconstruction error is $0.5$, so the mean is $0.5$,
+equal to the omitted eigenvalue $\lambda_2$.
+
+\subsection{Task 1.2: Ames Housing results and questions}
+
+The raw feature variances range from $0.3$ (bathrooms) to $583330.6$
+(lot area). Standardizing prevents a feature's units and numerical scale
+from dominating the PCA merely because its variance is large. PCA is fit
+to the features only; prices are used only for the score plot.
+
+\begin{center}
+\small
+\begin{tabular}{rrrrr}
+\toprule
+$K$ & Eigenvalue $\lambda_K$ & Ratio & Cumulative ratio & Reconstruction MSE\\
+\midrule
+1 & 3.677 & 0.408 & 0.408 & 5.324\\
+2 & 1.391 & 0.155 & 0.563 & 3.933\\
+3 & 1.068 & 0.119 & 0.682 & 2.866\\
+4 & 0.773 & 0.086 & 0.767 & 2.093\\
+5 & 0.603 & 0.067 & 0.834 & 1.490\\
+6 & 0.534 & 0.059 & 0.894 & 0.956\\
+7 & 0.409 & 0.045 & 0.939 & 0.548\\
+8 & 0.359 & 0.040 & 0.979 & 0.189\\
+9 & 0.189 & 0.021 & 1.000 & 0.000\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{enumerate}[label=\textbf{Q1.\arabic*:}]
+\item Yes. Without standardization, lot area could dominate because its raw
+variance is much larger than the other features' variances.
+\item The reconstruction error using the first $K$ directions is approximately
+the sum of the omitted eigenvalues. For standardized inputs, the reported
+error uses $1/N$ while scikit-learn's eigenvalues use $1/(N-1)$, so the error
+is approximately $(N-1)/N$ times that sum; this explains the small differences
+in the table. For compression, one can retain the smallest $K$ meeting a
+variance target: here $K=7$ retains $93.9\%$ of variance, while $K=6$
+retains $89.4\%$.
+\item All PC1 loadings are positive. The largest are living area ($0.42$),
+overall quality ($0.41$), bathrooms ($0.39$), garage area ($0.37$), and
+basement area ($0.34$). PC1 therefore summarizes a general combination of
+house size, quality, and amenities; a larger $z_1$ indicates a larger,
+better-equipped house.
+\item Although PCA does not use prices, these housing characteristics are
+associated with price: larger, newer, higher-quality houses tend to sell for
+more. Thus the feature-based score can correlate with price, without implying
+that PCA learned or causes that relationship.
+\end{enumerate}
+
+\plotplaceholder{PCA explained-variance and reconstruction-error plot
+(\texttt{1\_explained\_variance.pdf})}
+\plotplaceholder{First two principal-component scores colored by price
+(\texttt{1\_pc\_scatter.pdf})}
+
+\section{Overfitting and Model Evaluation}
+
+\subsection{Task 2.1: Toy example}
+
+For degree $1$, the fitted parameters are $\theta=(0.5,0.6)$, the training
+MSE is $0.050$, and the squared error on the fifth house is $0.010$.
+For degree $3$, $\theta=(-3,6.167,-2.5,0.333)$, the training MSE is
+approximately zero, and the test-house squared error is $12.960$.
+
+\begin{enumerate}[label=\textbf{Q2.\arabic*:},start=1]
+\item Four distinct input values give a $4\times4$ Vandermonde design matrix
+for a cubic. Its columns are linearly independent, so it has rank four and
+can interpolate the four training targets exactly.
+\item Training loss favors the cubic, while the held-out house favors the
+line. This is overfitting: the more flexible model fits the training data
+but generalizes poorly.
+\end{enumerate}
+
+\subsection{Task 2.2: Training, test, and holdout validation}
+
+\begin{center}
+\small
+\begin{tabular}{rrrr}
+\toprule
+Degree $d$ & Training MSE & Test MSE & Holdout validation MSE\\
+\midrule
+1 & 780.4 & 1162.9 & 893.9\\
+2 & 657.9 & 904.8 & 1210.0\\
+3 & 616.6 & 903.6 & 799.2\\
+4 & 585.0 & 1962.3 & 2770.7\\
+5 & 582.3 & 4214.3 & 3403.9\\
+6 & 574.1 & 14568.3 & 2562.0\\
+\bottomrule
+\end{tabular}
+\end{center}
+The holdout method selects degree $3$; after fitting it on all 100 training
+houses, its test MSE is $903.6$.
+
+\begin{enumerate}[label=\textbf{Q2.\arabic*:},start=3]
+\item Polynomial model classes are nested: a degree-$d+1$ polynomial can
+represent any degree-$d$ polynomial by setting the new coefficient to zero.
+Consequently, the minimum training error cannot increase with degree.
+Degree $1$ underfits relative to the better-performing degrees $2$ and $3$.
+Degrees $4$--$6$ overfit: their training errors continue to decrease while
+their test errors rise sharply. The high-degree fit can oscillate, particularly
+near the extremes of the score range, causing large errors on unseen houses.
+\item The test set must not be used to select the degree because selection
+adapts the model to test outcomes and makes the reported test error optimistically
+biased. The test MSE of the selected model is no longer an independent,
+unbiased final estimate.
+\item A validation set of 30 houses gives a noisy estimate, so a different
+random split may select another degree. The selected degree should therefore
+not be treated as certain; cross-validation can reduce dependence on one
+particular split.
+\end{enumerate}
+
+\plotplaceholder{Polynomial fits for degrees 1, 2, and 6
+(\texttt{2\_polynomial\_fits.pdf})}
+\plotplaceholder{Training, holdout-validation, and test MSE by degree
+(\texttt{2\_errors.pdf})}
+
+\section{Model Selection with Cross-Validation}
+
+The five-fold validation results and their mean are:
+\begin{center}
+\small
+\begin{tabular}{rrrrrrr}
+\toprule
+$d$ & Fold 1 & Fold 2 & Fold 3 & Fold 4 & Fold 5 & CV MSE\\
+\midrule
+1 & 847.8 & 1329.5 & 875.8 & 487.6 & 563.4 & 820.8\\
+2 & 920.6 & 1084.6 & 686.0 & 422.0 & 519.6 & 726.6\\
+3 & 1141.1 & 969.1 & 646.2 & 421.4 & 451.1 & 725.8\\
+4 & 1607.7 & 871.4 & 620.2 & 405.1 & 372.6 & 775.4\\
+5 & 2115.1 & 952.5 & 613.7 & 415.0 & 365.6 & 892.4\\
+6 & 2098.5 & 971.8 & 600.6 & 417.4 & 354.5 & 888.6\\
+\bottomrule
+\end{tabular}
+\end{center}
+Cross-validation selects $d=3$ (CV MSE $725.8$). Retraining on all
+100 training houses gives test MSE $903.6$.
+
+\begin{enumerate}[label=\textbf{Q3.\arabic*:}]
+\item If each fold is used as the validation set separately, the selected
+degrees are: fold 1: $d=1$; fold 2: $d=4$; fold 3: $d=6$; fold 4: $d=5$;
+fold 5: $d=6$. These vary substantially, whereas averaging across folds
+selects $d=3$.
+\item The holdout method and cross-validation both select $d=3$ in this run.
+Cross-validation is generally more trustworthy here because it averages over
+five validation splits instead of relying on one 30-house set. The mean CV
+errors for degrees 2 and 3 are close, however, so the selection is not
+certain.
+\item Using identical folds makes the degree comparison paired: each degree
+is evaluated on the same held-out examples. This reduces variation due to
+different splits and makes differences in validation error more attributable
+to the degree.
+\item Holdout is preferable when the dataset is large enough for a
+representative validation set and model training is costly. It requires fewer
+fits than $K$-fold CV, while CV is useful when data is limited and a more
+stable estimate is worth the additional computation.
+\end{enumerate}
+
+\plotplaceholder{Cross-validation and test MSE by degree; selected degree
+(\texttt{3\_cross\_validation.pdf})}
+
+\section*{Generative AI disclosure}
+An AI coding assistant was used to help implement and check the analysis and
+to draft this report. The reported numerical results were checked against
+the provided Python task outputs. AI-generated code and explanations can
+still contain errors; the authors are responsible for understanding and
+verifying the submitted solution.
+
+\end{document}
