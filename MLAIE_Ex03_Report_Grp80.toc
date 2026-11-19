@@ -1,0 +1,9 @@
+\contentsline {section}{\numberline {1}Task 1: Principal Component Analysis }{2}{}%
+\contentsline {subsection}{\numberline {1.1}Task 1.1: Pen and paper computation}{2}{}%
+\contentsline {subsection}{\numberline {1.2}Task 1.2: Implementation of PCA}{4}{}%
+\contentsline {section}{\numberline {2}Task 2: Overfitting and Model Evaluation}{6}{}%
+\contentsline {subsection}{\numberline {2.1}Task 2.1: Toy example}{6}{}%
+\contentsline {subsection}{\numberline {2.2}Task 2.2: Training, test, and holdout validation}{6}{}%
+\contentsline {section}{\numberline {3}Task 3: Model Selection with Cross-Validation}{9}{}%
+\contentsline {section}{\numberline {4}Addendum}{10}{}%
+\contentsline {section}{\numberline {5}Usage of generative AI}{10}{}%

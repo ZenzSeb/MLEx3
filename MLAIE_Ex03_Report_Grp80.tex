@@ -1,0 +1,335 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{bm}
+
+\newcommand{\sheetnumber}{3}
+\newcommand{\R}{\mathbb{R}}
+
+\usepackage{listings}
+
+\providecommand{\xx}{\mathbf{x}}
+\providecommand{\yy}{\mathbf{y}}
+\providecommand{\XX}{\mathbf{X}}
+\providecommand{\tth}{\boldsymbol{\theta}}
+\providecommand{\sigm}{\sigma}
+\providecommand{\rank}{\operatorname{rank}}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  frame=single,
+  breaklines=true,
+  columns=fullflexible
+}
+
+\begin{document}
+
+\begin{titlepage}
+  \begin{center}
+    {\Large \textbf{Exercise Sheet \sheetnumber}}
+
+    \vspace{0.5em}
+    Machine Learning for AIE, WS 2026/27
+
+    \vspace{2em}
+    {\LARGE \textbf{PCA and Model Selection: \\Predicting House Prices.}}
+  \end{center}
+
+  \vspace{2em}
+  \begin{center}
+    \begin{tabular}{|l|l|l|}\hline
+      \multicolumn{3}{|c|}{\textbf{Team Members}} \\\hline
+      Last name & First name & Matriculation number \\\hline
+      ZENZ & Sebastian & 01031159 \\\hline
+    \end{tabular}
+  \end{center}
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+
+\section{Task 1: Principal Component Analysis }
+\label{sec:PCA}
+ 
+\subsection{Task 1.1: Pen and paper computation}
+\label{subsec:PCA1}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.75\linewidth]{plots/Ex1_1_1.png}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.75\linewidth]{plots/Ex1_1_2.png}
+\end{figure}
+
+\clearpage
+\subsection{Task 1.2: Implementation of PCA}
+\label{subsec:PCA2}
+The function \texttt{standardize\_and\_fit\_pca} was implemented and a PCA was fitted to the 9 features.
+The eigenvalues and explained variance ration from the fitted PCA was computed and are listed in the table below.
+With the inverse transformation provided in the \texttt{Scikit-Learn} module, the reconstruction error with the first 
+K principal directions as well:
+
+\begin{center}
+\small
+\begin{tabular}{rrrrr}
+\toprule
+$K$ & Eigenvalue $\lambda_K$ & Ratio & Cumulative ratio & Reconstruction MSE\\
+\midrule
+1 & 3.677 & 0.408 & 0.408 & 5.324\\
+2 & 1.391 & 0.155 & 0.563 & 3.933\\
+3 & 1.068 & 0.119 & 0.682 & 2.866\\
+4 & 0.773 & 0.086 & 0.767 & 2.093\\
+5 & 0.603 & 0.067 & 0.834 & 1.490\\
+6 & 0.534 & 0.059 & 0.894 & 0.956\\
+7 & 0.409 & 0.045 & 0.939 & 0.548\\
+8 & 0.359 & 0.040 & 0.979 & 0.189\\
+9 & 0.189 & 0.021 & 1.000 & 0.000\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{enumerate}[label=\textbf{Q1.\arabic*:}]
+\item Standardization ist important here because the features have very different units and ranges (see output of variance of the raw features below).
+Without standardization, lot area could dominate because its raw
+variance is much larger than the other features' variances
+
+\begin{lstlisting}
+variance of the raw features:
+  living_area          2013.1
+  lot_area           583330.6
+  basement_area        1443.1
+  garage_area           350.9
+  year_built            869.2
+  overall_quality         1.8
+  bedrooms                0.7
+  bathrooms               0.3
+  fireplaces              0.4
+\end{lstlisting}
+
+\item The reconstruction error using the first $K$ directions is approximately
+the sum of the omitted eigenvalues (as seen in in Task 1.1(b) as well).
+For compression, one can retain the smallest $K$ that still meets a
+defined variance target: here $K=7$ retains $93.9\%$ of variance, while $K=6$
+retains $89.4\%$.
+\\The Figure~\ref{fig:expVar} plots the trend between (cumulative) explained error and mean squared reconstruction error
+in relation to the number of principal directions K used for the PCA.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.75\linewidth]{plots/1_explained_variance.pdf}
+  \caption{Explained variance and MSCE over K}
+  \label{fig:expVar}
+\end{figure}
+
+\item The first principal directions of b\_1 are included in the output below. 
+All PC1 scores are positive. The largest are living area ($0.42$),
+overall quality ($0.41$), bathrooms ($0.39$), garage area ($0.37$), and
+basement area ($0.34$). PC1 therefore summarizes a general combination of
+house size, quality, etc. A larger $z_1$ indicates a larger,
+better-equipped house (like a new pseudo feature).
+\begin{lstlisting}
+first principal direction b_1:
+  living_area        0.42
+  lot_area           0.16
+  basement_area      0.34
+  garage_area        0.37
+  year_built         0.31
+  overall_quality    0.41
+  bedrooms           0.20
+  bathrooms          0.39
+  fireplaces         0.29
+\end{lstlisting}
+
+\item Although PCA does not use prices as an input, these housing characteristics are
+associated with price: larger, newer, higher-quality houses tend to sell for
+more. Thus the feature-based scores can correlate with price, without implying
+that PCA learned or causes that relationship. 
+\\Figure~\ref{fig:pcScatter} shows the housing price in relation to the scores $z_1$ and $z_2$. The positive correlation
+of increasing house prices with increasing magnitude of the feature scores (especially $z_1$) is clearly visible.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\linewidth]{plots/1_pc_scatter.pdf}
+  \caption{Scatter plot of house price over PCA scores z1, z2}
+  \label{fig:pcScatter}
+\end{figure}
+\end{enumerate}
+
+\clearpage
+\section{Task 2: Overfitting and Model Evaluation}
+\label{sec:overfit}
+
+\subsection{Task 2.1: Toy example}
+
+For degree $1$, the fitted parameters are $\theta=(0.5,0.6)$, the training
+MSE is $0.050$, and the squared error on the fifth house is $0.010$.
+For degree $3$, $\theta=(-3,6.167,-2.5,0.333)$, the training MSE is
+approximately zero, and the test-house squared error is $12.960$
+
+\begin{lstlisting}
+  d = 1: theta = [0.5 0.6], training MSE = 0.050, squared error on the test house = 0.010
+  d = 3: theta = [-3.     6.167 -2.5    0.333], training MSE = 0.000, squared error on the test house = 12.960
+  design matrix Phi of degree 3:
+  [[ 1.  1.  1.  1.]
+  [ 1.  2.  4.  8.]
+  [ 1.  3.  9. 27.]
+  [ 1.  4. 16. 64.]]
+\end{lstlisting}
+
+\begin{enumerate}[label=\textbf{Q2.\arabic*:},start=1]
+\item Here, the design matrix is 4x4: four training points and four cubic-model parameters. 
+The rank of the matrix is 4 as well (full-rank). Since the four input values are
+different, a polynomial with degree 3 can fit all four training points exactly and therefore the training MSE equals to 0.
+\item  The cubic model achieves the lower training loss, if that would be our only criterion on choosing the model complexity,
+the polynomial degree of 3 would be the better choice. Choosing the cubic leads to a higher test loss, as the higher model
+complexity results in a more flexibel model, that fits the training data better, but has a higher test loss or: it generalizes
+worse for unseen data. This phenomenon is called overfitting!
+\end{enumerate}
+
+\subsection{Task 2.2: Training, test, and holdout validation}
+
+With dataset was split into 100 houses for the training set and 2313 test houses. The polynomial degree is treated as a hyperparameter
+for this task and the training and test MSE for d=1..6 are reported:
+\begin{lstlisting}
+100 training houses, 2313 test houses
+  d = 1: training MSE = 780.4, test MSE = 1162.9
+  d = 2: training MSE = 657.9, test MSE = 904.8
+  d = 3: training MSE = 616.6, test MSE = 903.6
+  d = 4: training MSE = 585.0, test MSE = 1962.3
+  d = 5: training MSE = 582.3, test MSE = 4214.3
+  d = 6: training MSE = 574.1, test MSE = 14568.3
+\end{lstlisting}
+\vspace{1em}
+\noindent Figure~\ref{fig:mvsPolyFits} plots the polynomials of degree 1, 2 and 6 for the fitted model. With the the polynomial degree 6 the
+the overfitting phenomena is illustrated pretty well. The model is flexible enough, to find the optimum to approximate to the training
+dataset (black dots). As the training dataset is rather small, the model tends to overfit to the seen training data but fails
+to generalized the underlying trend of the complete dataset (all dots, including opaque grey datapoints) very well.
+
+\clearpage
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\linewidth]{plots/2_polynomial_fits.pdf}
+  \caption{Polynomial fits over first principle direction z1}
+  \label{fig:mvsPolyFits}
+\end{figure}
+
+
+\noindent For Task 2.2(b) the holdout method is used. The training set is further split into a (sub-)training and a validation set.
+The model is fitted and trained on the training set and validated with the validation set.
+Bases ond the lowest validation loss (d=3 in this case), the model is selected and the validation and subtraining set are combined again for
+a final training cycle and evaluated against the test set.
+
+
+\begin{lstlisting}
+  d = 1: validation MSE = 893.9
+  d = 2: validation MSE = 1210.0
+  d = 3: validation MSE = 799.2
+  d = 4: validation MSE = 2770.7
+  d = 5: validation MSE = 3403.9
+  d = 6: validation MSE = 2562.0
+  selected degree: d = 3, test MSE after re-training on all 100 training houses = 903.6
+\end{lstlisting}
+
+\noindent The holdout method selects degree $3$; after fitting it on all 100 training
+houses, its test MSE is $903.6$.
+\clearpage
+\noindent Figure~\ref{fig:mvsErrors} plots the calculated training, validation and test MSE over the polynomial degree d.
+In this figure the effect of overfitting can also be detected. The training loss is getting lower with increasing polynomial degree
+(models fits the training set better with higher complexity), but the training and validation error is increasing --> model generalizes
+worse for unseen data. Selecting a model only with the training loss will result in an overly optimistic estimate for the real
+test/use cases and will result in bad performance.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1\linewidth]{plots/2_errors.pdf}
+  \caption{Training, validation and test MSE over polynomial degree }
+  \label{fig:mvsErrors}
+\end{figure}
+
+\begin{enumerate}[label=\textbf{Q2.\arabic*:},start=3]
+\item Polynomial model classes are nested: a degree-$d+1$ polynomial can
+represent any degree-$d$ polynomial by setting a coefficient to zero.
+Therefore, the minimum training error cannot increase with degree.
+\\ The model with polynomial degree $1$ underfits (high training and test error) relative to the better-performing degrees $2$ and $3$.
+Degrees $4$--$6$ overfit: their training errors continue to decrease while
+their test errors increase. 
+\\Figure~\ref{fig:mvsPolyFits} indicates, that the largest test error are meassured
+at the extreme principal scores (far from the mean), while estimating the dense "middle part", close to the mean, pretty well.
+\item The test set MUST not be used to select the degree because selection
+adapts the model to test outcomes (feedback) and makes the reported test error optimistically
+biased. The test MSE of the selected model is no longer an independent,
+unbiased final estimate.
+\item A validation set of 30 houses gives a very noisy estimate, so a different
+random split may change the calculated losses significantly and suggest another hyperparameter configuration. 
+The selected degree should therefore not be treated as certain; cross-validation can reduce dependence on one
+particular split.
+\end{enumerate}
+
+\clearpage
+\section{Task 3: Model Selection with Cross-Validation}
+The five-fold validation results and their mean are:
+\begin{center}
+\small
+\begin{tabular}{rrrrrrr}
+\toprule
+$d$ & Fold 1 & Fold 2 & Fold 3 & Fold 4 & Fold 5 & CV MSE\\
+\midrule
+1 & 847.8 & 1329.5 & 875.8 & 487.6 & 563.4 & 820.8\\
+2 & 920.6 & 1084.6 & 686.0 & 422.0 & 519.6 & 726.6\\
+3 & 1141.1 & 969.1 & 646.2 & 421.4 & 451.1 & 725.8\\
+4 & 1607.7 & 871.4 & 620.2 & 405.1 & 372.6 & 775.4\\
+5 & 2115.1 & 952.5 & 613.7 & 415.0 & 365.6 & 892.4\\
+6 & 2098.5 & 971.8 & 600.6 & 417.4 & 354.5 & 888.6\\
+\bottomrule
+\end{tabular}
+\end{center}
+Cross-validation selects $d=3$ (CV MSE $725.8$). Retraining on all
+100 training houses gives test MSE $903.6$.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.75\linewidth]{plots/3_cross_validation.pdf}
+  \caption{Cross validation and test MSE over polynomial degrees}
+  \label{fig:cvMSE}
+\end{figure}
+
+\begin{enumerate}[label=\textbf{Q3.\arabic*:}]
+\item If each fold is used as the validation set separately, the selected
+degrees are: fold 1: $d=1$; fold 2: $d=4$; fold 3: $d=6$; fold 4: $d=5$;
+fold 5: $d=6$. These vary substantially, whereas averaging across folds
+selects $d=3$.
+\item The holdout method and cross-validation both select $d=3$ in this run.
+Cross-validation is generally more trustworthy here because it averages over
+five validation splits instead of relying on one 30-house set. The mean CV
+errors for degrees 2 and 3 are close, however, so the selection is not
+certain.
+\item Using identical folds makes the degree comparison paired: each degree
+is evaluated on the same held-out examples. This reduces variation due to
+different splits and makes differences in validation error more attributable
+to the degree.
+\item Holdout is preferable when the dataset is large enough for a
+representative validation set and model training is costly. It requires fewer
+fits than $K$-fold CV, while CV is useful when data is limited and a more
+stable estimate is worth the additional computation.
+\end{enumerate}
+
+\clearpage
+\section{Addendum}
+\section{Usage of generative AI}
+Generative AI was used in the the form of GitHub Copilot in Visual Studio Code. As the coding effort for this assignment
+was managable, AI was mostly used to get information on how to properly use the different scikit-learn function, without
+the need to search the documentation on the scikit website and saving time this way.
+\\Another usecase was the import of tables (pandas etc.) from visual studio to a nicely formatted table in LaTeX.
+
+\end{document}

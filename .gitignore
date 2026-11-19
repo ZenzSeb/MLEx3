@@ -1,3 +1,5 @@
 *.zip
 /solved_Ex3
 /__pycache__
+/.latex-build
+/plots

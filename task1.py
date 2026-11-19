@@ -21,9 +21,9 @@ def standardize_and_fit_pca(features: pd.DataFrame, n_components: int | None = N
 
     Returns (X, pca): the standardized features X (np.ndarray of shape (N, D)) and the fitted PCA.
     """
-    # TODO: Task 1.2
-    X = None  # TODO: Standardize the features to mean 0 and variance 1. Hint: use StandardScaler from sklearn.preprocessing
-    pca = None  # TODO: Fit a PCA with n_components principal directions to the standardized features. Hint: use PCA from sklearn.decomposition
+    scaler = StandardScaler()
+    X = scaler.fit_transform(features)
+    pca = PCA(n_components=n_components).fit(X)
 
     return X, pca
 
@@ -32,11 +32,9 @@ def load_scores() -> tuple[np.ndarray, np.ndarray]:
     """Score z_1 of every house on the first principal direction, shape (N, 1), and the prices y (Tasks 2 and 3)."""
 
     features, y = load_housing()
-
     X, pca = standardize_and_fit_pca(features, n_components=1)
-
-    z = ...  # TODO: compute the score z_1 of every house on the first principal direction (shape (N, 1))
     # Hint: look at pca.transform(..)
+    z = pca.transform(X)
 
     if pca.components_[0, features.columns.get_loc("living_area")] < 0:  # the sign of a principal direction is
         z = -z  # arbitrary: we choose it such that larger houses get larger scores
@@ -52,8 +50,7 @@ def task_1(rng: np.random.Generator) -> None:
 
     X, pca = standardize_and_fit_pca(features)  # PCA of all houses (PCA does not use the prices)
 
-    ratio = ...  # TODO: get the explained variance ratio of the principal components
-    # Hint: look at the pca object and its attributes
+    ratio = ratio = pca.explained_variance_ratio_
 
     table = pd.DataFrame({"eigenvalue": pca.explained_variance_, "ratio": ratio, "cumulative ratio": np.cumsum(ratio)},
                          index=pd.RangeIndex(1, len(ratio) + 1, name="j"))
@@ -63,17 +60,15 @@ def task_1(rng: np.random.Generator) -> None:
     errors = []
     for K in range(1, len(ratio) + 1):
 
-        pca_K = ...  # TODO: Calculate the pca for the first K principal components
-        # Hint: use your standardize_and_fit_pca()
+        X, pca_K = standardize_and_fit_pca(features, n_components=K)
 
-        X_hat = ...  # TODO: Compute the reconstruction of X using the first K principal components
-        # Hint: Look at the pca_K object and its attributes and its functions. You can use the inverse_transform function of the pca_K object to compute the reconstruction of X.
+        X_hat = X_hat = pca_K.inverse_transform(pca_K.transform(X))
+        mse = np.mean(np.sum((X - X_hat) ** 2, axis=1))
 
-        errors.append(...)  # TODO: Compute the mean squared reconstruction error of X_hat and X.
-        # Hint: implement the mean squared error. np.sum() and np.mean() might be useful. Think on which axis you want to sum and mean over.
-        # The shape of X and X_hat is (N, D).
+        errors.append(mse)
 
         print(f"  K = {K}: {errors[-1]:.3f}")
+
 
     plot_explained_variance(ratio, errors)
 

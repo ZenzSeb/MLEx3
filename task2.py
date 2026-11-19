@@ -29,22 +29,18 @@ def polynomial_model(degree: int) -> Pipeline:
 
     Returns a scikit-learn pipeline that first computes the polynomial features and then fits a linear regression.
     """
-    poly_model = ...  # TODO: Task 2.1. Create a pipeline that computes the polynomial features of a degree and then fits a linear regression to them.
+    poly_model = make_pipeline(PolynomialFeatures(degree=degree), LinearRegression())
     # Hint: familiarise yourself with the make_pipeline from sklearn.pipeline, PolynomialFeatures from sklearn.preprocessing and LinearRegression from sklearn.linear_model
-
+    
     return poly_model
 
 
 def train_and_evaluate(x_train: np.ndarray, y_train: np.ndarray, x_eval: np.ndarray, y_eval: np.ndarray,
                        degree: int) -> float:
     """Trains polynomial_model(degree) on (x_train, y_train) and returns its MSE (float) on (x_eval, y_eval) (Task 2.1)."""
-    # TODO: Task 2.1: fit the polynomial model of a given degree to the training data and compute the MSE on the evaluation data.
-
-    y_pred_eval = ...  # TODO: compute the predictions of the polynomial model of a given degree on the evaluation data
-    # Hint: use your polynomial model function and its fit and predict methods.
-
-    mse = ...  # TODO: compute the mean squared error of the predictions on the evaluation data.
-    # Hint: look at mean_squared_error from sklearn.metrics
+    poly_model = polynomial_model(degree).fit(x_train, y_train)
+    y_pred_eval = poly_model.predict(x_eval)
+    mse = mean_squared_error(y_eval, y_pred_eval)
 
     return mse
 
@@ -71,9 +67,8 @@ def task_2(rng: np.random.Generator) -> None:
 
     train_mse, test_mse = [], []
     for d in DEGREES:
-        # TODO: append the training MSE and the test MSE of a polynomial of degree d, trained on the training houses
-        # Hint: use your train_and_evaluate function to compute the training and test MSEs.
-
+        train_mse.append(train_and_evaluate(z_train, y_train, z_train, y_train, d))
+        test_mse.append(train_and_evaluate(z_train, y_train, z_test, y_test, d))
         print(f"d = {d}: training MSE = {train_mse[-1]:.1f}, test MSE = {test_mse[-1]:.1f}")
 
     grid = np.linspace(z.min(), z.max(), 300).reshape(-1, 1)
@@ -87,9 +82,8 @@ def task_2(rng: np.random.Generator) -> None:
 
     val_mse = []
     for d in DEGREES:
-        # TODO: append the validation MSE of a polynomial of degree d, trained on (z_tr, y_tr)
+        val_mse.append(train_and_evaluate(z_tr, y_tr, z_val, y_val, d))
         # Hint: use your train_and_evaluate function to compute the validation MSEs.
-
         print(f"d = {d}: validation MSE = {val_mse[-1]:.1f}")
 
     d_holdout = DEGREES[np.argmin(val_mse)]

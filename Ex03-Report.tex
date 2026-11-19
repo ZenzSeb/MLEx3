@@ -124,9 +124,8 @@ For degree $3$, $\theta=(-3,6.167,-2.5,0.333)$, the training MSE is
 approximately zero, and the test-house squared error is $12.960$.
 
 \begin{enumerate}[label=\textbf{Q2.\arabic*:},start=1]
-\item Four distinct input values give a $4\times4$ Vandermonde design matrix
-for a cubic. Its columns are linearly independent, so it has rank four and
-can interpolate the four training targets exactly.
+\item A cubic model has four parameters. Since the four input values are
+different, it can fit all four training points exactly.
 \item Training loss favors the cubic, while the held-out house favors the
 line. This is overfitting: the more flexible model fits the training data
 but generalizes poorly.
