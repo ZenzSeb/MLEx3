@@ -40,7 +40,7 @@
     Machine Learning for AIE, WS 2026/27
 
     \vspace{2em}
-    {\LARGE \textbf{PCA and Model Selection: \\Predicting House Prices.}}
+    {\LARGE \textbf{PCA and Model Selection:\\[10pt] Predicting House Prices}}
   \end{center}
 
   \vspace{2em}
@@ -267,8 +267,8 @@ their test errors increase.
 \\Figure~\ref{fig:mvsPolyFits} indicates, that the largest test error are meassured
 at the extreme principal scores (far from the mean), while estimating the dense "middle part", close to the mean, pretty well.
 \item The test set MUST not be used to select the degree because selection
-adapts the model to test outcomes (feedback) and makes the reported test error optimistically
-biased. The test MSE of the selected model is no longer an independent,
+influences the model to test outcomes (feedback) and makes the reported test error overly optimistical
+biased and the test MSE of the selected model is no longer an independent,
 unbiased final estimate.
 \item A validation set of 30 houses gives a very noisy estimate, so a different
 random split may change the calculated losses significantly and suggest another hyperparameter configuration. 
@@ -306,15 +306,15 @@ Cross-validation selects $d=3$ (CV MSE $725.8$). Retraining on all
 
 \begin{enumerate}[label=\textbf{Q3.\arabic*:}]
 \item If each fold is used as the validation set separately, the selected
-degrees are: fold 1: $d=1$; fold 2: $d=4$; fold 3: $d=6$; fold 4: $d=5$;
+degrees are: fold 1: $d=1$; fold 2: $d=4$; fold 3: $d=6$; fold 4: $d=4$;
 fold 5: $d=6$. These vary substantially, whereas averaging across folds
 selects $d=3$.
 \item The holdout method and cross-validation both select $d=3$ in this run.
 Cross-validation is generally more trustworthy here because it averages over
-five validation splits instead of relying on one 30-house set. The mean CV
+K validation splits instead of relying on one 30-house set. The mean CV
 errors for degrees 2 and 3 are close, however, so the selection is not
-certain.
-\item Using identical folds makes the degree comparison paired: each degree
+certain either way.
+\item Using identical folds makes the degree comparison linked: each degree
 is evaluated on the same held-out examples. This reduces variation due to
 different splits and makes differences in validation error more attributable
 to the degree.
@@ -326,7 +326,7 @@ stable estimate is worth the additional computation.
 
 \clearpage
 \section{Addendum}
-\section{Usage of generative AI}
+\subsection{Usage of generative AI}
 Generative AI was used in the the form of GitHub Copilot in Visual Studio Code. As the coding effort for this assignment
 was managable, AI was mostly used to get information on how to properly use the different scikit-learn function, without
 the need to search the documentation on the scikit website and saving time this way.

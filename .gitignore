@@ -3,3 +3,6 @@
 /__pycache__
 /.latex-build
 /plots
+*.log
+MLAIE_Ex03_Report_Grp80.toc
+*.toc
